@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Diabetes Risk Predictor</title>
+</head>
+<body>
+    <div class="container">
+        <h1>🩺 Diabetes Risk Predictor</h1>
+        <p class="subtitle">Using Logistic Regression Model</p>
+        
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="Pregnancies">Pregnancies:</label>
+                <input type="number" id="Pregnancies" name="Pregnancies" placeholder="Number of pregnancies" value="0" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="Glucose">Glucose Level (mg/dL): *</label>
+                <input type="number" id="Glucose" name="Glucose" placeholder="e.g., 120" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="BloodPressure">Blood Pressure (mm Hg): *</label>
+                <input type="number" id="BloodPressure" name="BloodPressure" placeholder="e.g., 70" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="SkinThickness">Skin Thickness (mm):</label>
+                <input type="number" id="SkinThickness" name="SkinThickness" placeholder="e.g., 20" value="0" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="Insulin">Insulin Level (mu U/ml):</label>
+                <input type="number" id="Insulin" name="Insulin" placeholder="e.g., 80" value="0" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="BMI">BMI (Body Mass Index): *</label>
+                <input type="number" step="0.1" id="BMI" name="BMI" placeholder="e.g., 25.5" required min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="Age">Age (years): *</label>
+                <input type="number" id="Age" name="Age" placeholder="e.g., 35" required min="1" max="120">
+            </div>
+            
+            <button type="submit" id="predictBtn">Predict Risk</button>
+        </form>
+        
+        <div id="result" class="result hidden">
+            <h2>Prediction Result</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            
+            // Collect form data
+            const formData = {
+                Pregnancies: document.getElementById('Pregnancies').value || 0,
+                Glucose: document.getElementById('Glucose').value,
+                BloodPressure: document.getElementById('BloodPressure').value,
+                SkinThickness: document.getElementById('SkinThickness').value || 0,
+                Insulin: document.getElementById('Insulin').value || 0,
+                BMI: document.getElementById('BMI').value,
+                Age: document.getElementById('Age').value
+            };
+            
+            try {
+                // Send prediction request
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResult(data);
+                } else {
+                    displayError(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                displayError('Failed to connect to the server. Make sure the Flask app is running.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Predict Risk';
+            }
+        });
+        
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            let riskClass = '';
+            let riskEmoji = '';
+            
+            if (data.risk_level === 'Low') {
+                riskClass = 'low-risk';
+                riskEmoji = '✅';
+            } else if (data.risk_level === 'Moderate') {
+                riskClass = 'moderate-risk';
+                riskEmoji = '⚠️';
+            } else {
+                riskClass = 'high-risk';
+                riskEmoji = '🚨';
+            }
+            
+            resultContent.innerHTML = `
+                <div class="risk-badge ${riskClass}">
+                    <div class="risk-emoji">${riskEmoji}</div>
+                    <div class="risk-level">${data.risk_level} Risk</div>
+                    <div class="risk-percentage">${data.risk_percentage}%</div>
+                </div>
+                <div class="prediction-message">
+                    <strong>Prediction:</strong> ${data.message}
+                </div>
+                <div class="disclaimer">
+                    ⚕️ <em>This is a prediction based on a machine learning model. 
+                    Please consult a healthcare professional for proper medical advice.</em>
+                </div>
+            `;
+            
+            resultDiv.classList.remove('hidden');
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function displayError(message) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultContent.innerHTML = `
+                <div class="error-message">
+                    ❌ <strong>Error:</strong> ${message}
+                </div>
+            `;
+            
+            resultDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
