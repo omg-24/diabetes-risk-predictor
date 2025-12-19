@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load the trained model
+# Load model
 MODEL_PATH = 'diabetes_model.pkl'
 
 try:
@@ -32,8 +32,6 @@ def predict():
         
         # Get data from request
         data = request.get_json()
-        print(f"Received data: {data}")
-        
         # Extract features in the correct order
         features = [
             float(data.get('Pregnancies', 0)),
@@ -45,23 +43,13 @@ def predict():
             float(data.get('DiabetesPedigreeFunction', 0.5)),  # Default value
             float(data.get('Age', 0))
         ]
-        
-        print(f"Features: {features}")
-        
-        # Make prediction
+
         features_array = np.array([features])
-        print(f"Features array shape: {features_array.shape}")
-        
         prediction = model.predict(features_array)[0]
-        print(f"Prediction: {prediction}")
-        
         probability = model.predict_proba(features_array)[0]
-        print(f"Probability: {probability}")
-        
-        # Calculate risk percentage
+
         risk_percentage = round(probability[1] * 100, 2)
         
-        # Determine risk level
         if risk_percentage < 30:
             risk_level = "Low"
         elif risk_percentage < 60:
@@ -69,19 +57,14 @@ def predict():
         else:
             risk_level = "High"
         
-        result = {
+        return jsonify({
             'prediction': int(prediction),
             'risk_percentage': risk_percentage,
             'risk_level': risk_level,
             'message': 'Diabetic' if prediction == 1 else 'Non-Diabetic'
-        }
-        print(f"Result: {result}")
-        return jsonify(result)
+        })
         
     except Exception as e:
-        print(f"Error during prediction: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':

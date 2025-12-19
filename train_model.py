@@ -41,11 +41,11 @@ def download_diabetes_data():
 
 def train_logistic_regression_model():
     print("="*60)
-    print("Diabetes Risk Predictor - Model Training")
+    print("Training Diabetes Prediction Model")
     print("="*60)
     
     # Load data
-    print("\n1. Loading dataset...")
+    print("\nLoading dataset...")
     df = download_diabetes_data()
     print(f"Dataset shape: {df.shape}")
     print(f"\nFirst few rows:\n{df.head()}")
@@ -53,7 +53,7 @@ def train_logistic_regression_model():
     # Check for missing values
     print(f"\nMissing values:\n{df.isnull().sum()}")
     
-    # Replace zeros with median (for certain features, 0 is not realistic)
+    # Handle zeros in medical data
     features_to_replace_zeros = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
     for feature in features_to_replace_zeros:
         df[feature] = df[feature].replace(0, df[feature].median())
@@ -63,23 +63,23 @@ def train_logistic_regression_model():
     y = df['Outcome']
     
     print(f"\nClass distribution:")
-    print(f"Non-Diabetic (0): {sum(y==0)} ({sum(y==0)/len(y)*100:.2f}%)")
-    print(f"Diabetic (1): {sum(y==1)} ({sum(y==1)/len(y)*100:.2f}%)")
+    print(f"Non-Diabetic: {sum(y==0)} ({sum(y==0)/len(y)*100:.2f}%)")
+    print(f"Diabetic: {sum(y==1)} ({sum(y==1)/len(y)*100:.2f}%)")
     
     # Split the data
-    print("\n2. Splitting dataset into train and test sets (80-20 split)...")
+    print("\nSplitting data...")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
     
-    # Scale the features
-    print("\n3. Scaling features...")
+    # Scale features
+    print("\nScaling features...")
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Train Logistic Regression model
-    print("\n4. Training Logistic Regression model...")
+    # Train model
+    print("\nTraining Logistic Regression...")
     model = LogisticRegression(
         random_state=42,
         max_iter=1000,
@@ -87,8 +87,8 @@ def train_logistic_regression_model():
     )
     model.fit(X_train_scaled, y_train)
     
-    # Make predictions
-    print("\n5. Evaluating model...")
+    # Evaluate
+    print("\nEvaluating model...")
     y_pred_train = model.predict(X_train_scaled)
     y_pred_test = model.predict(X_test_scaled)
     
@@ -96,40 +96,39 @@ def train_logistic_regression_model():
     train_accuracy = accuracy_score(y_train, y_pred_train)
     test_accuracy = accuracy_score(y_test, y_pred_test)
     
-    print(f"\nTraining Accuracy: {train_accuracy:.4f} ({train_accuracy*100:.2f}%)")
-    print(f"Testing Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
+    print(f"\nTraining Accuracy: {train_accuracy:.4f}")
+    print(f"Testing Accuracy: {test_accuracy:.4f}")
     
     # Confusion Matrix
-    print(f"\nConfusion Matrix (Test Set):")
+    print(f"\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred_test))
     
     # Classification Report
-    print(f"\nClassification Report (Test Set):")
+    print(f"\nClassification Report:")
     print(classification_report(y_test, y_pred_test, 
                                 target_names=['Non-Diabetic', 'Diabetic']))
     
-    # Feature importance (coefficients)
-    print("\nFeature Importance (Coefficients):")
+    # Feature importance
+    print("\nFeature Importance:")
     feature_importance = pd.DataFrame({
         'Feature': X.columns,
         'Coefficient': model.coef_[0]
     }).sort_values('Coefficient', ascending=False)
     print(feature_importance)
     
-    # Create a pipeline that includes scaling
+    # Save model
     from sklearn.pipeline import Pipeline
     final_model = Pipeline([
         ('scaler', scaler),
         ('classifier', model)
     ])
     
-    # Save the model
-    print("\n6. Saving model...")
+    print("\nSaving model...")
     with open('diabetes_model.pkl', 'wb') as f:
         pickle.dump(final_model, f)
     
     print("\n" + "="*60)
-    print("Model trained and saved successfully as 'diabetes_model.pkl'!")
+    print("Model trained and saved as 'diabetes_model.pkl'")
     print("="*60)
     
     return final_model
